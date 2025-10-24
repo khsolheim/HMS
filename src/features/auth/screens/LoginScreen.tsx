@@ -5,6 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signInWithEmail } from '@/services/firebase/auth';
+import { useGoogleSignIn } from '@/services/firebase/googleAuth';
 import { useAuthStore } from '../store/authStore';
 import { authenticateWithBiometrics, isBiometricAvailable, getBiometricDisplayName } from '../services/biometric';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,6 +34,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [biometricName, setBiometricName] = useState('Biometrisk');
   const [showPassword, setShowPassword] = useState(false);
   const { setLoading: setAuthLoading } = useAuthStore();
+  const { signInWithGoogle, isReady: googleReady } = useGoogleSignIn();
 
   const {
     control,
@@ -87,8 +89,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   const handleGoogleSignIn = async () => {
-    // TODO: Implement Google Sign-In with expo-auth-session
-    setError('Google Sign-In kommer snart');
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { user, error: googleError } = await signInWithGoogle();
+      
+      if (googleError) {
+        setError(googleError);
+      } else if (user) {
+        // User is automatically logged in via Firebase Auth listener
+        console.log('Google sign-in successful:', user.email);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in feilet');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAppleSignIn = async () => {
@@ -217,7 +234,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <Button
             mode="outlined"
             onPress={handleGoogleSignIn}
-            disabled={loading}
+            disabled={loading || !googleReady}
+            loading={loading}
             icon="google"
             style={styles.socialButton}
           >
