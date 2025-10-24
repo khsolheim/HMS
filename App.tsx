@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import '@/services/firebase/config'; // Initialize Firebase
 import { useAuthInit, useAuth } from '@/features/auth/hooks/useAuth';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
+import { MainNavigator } from '@/navigation/MainNavigator';
 import { OnboardingNavigator } from '@/navigation/OnboardingNavigator';
 import { storageHelpers } from '@/shared/utils/storage';
 import { useState, useEffect } from 'react';
@@ -57,15 +58,8 @@ function AppContent() {
     );
   }
 
-  // TODO: Replace with MainNavigator after P0-5
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>HMS Inventory</Text>
-      <Text style={styles.subtitle}>✅ Autentisert og Onboarding fullført!</Text>
-      <Text style={styles.info}>MainNavigator kommer i P0-5</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+  // Show main app
+  return <MainNavigator />;
 }
 
 export default function App() {
