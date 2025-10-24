@@ -5,7 +5,7 @@ import { useTheme } from 'react-native-paper';
 
 // Placeholder screens (will be implemented later)
 import DashboardScreen from '@/features/dashboard/screens/DashboardScreen';
-import InventoryScreen from '@/features/inventory/screens/InventoryScreen';
+import { InventoryNavigator } from '@/features/inventory/navigation/InventoryNavigator';
 import ScannerScreen from '@/features/scanner/screens/ScannerScreen';
 import SettingsScreen from '@/features/settings/screens/SettingsScreen';
 
@@ -51,9 +51,10 @@ export const MainNavigator = () => {
       />
       <Tab.Screen
         name="Inventory"
-        component={InventoryScreen}
+        component={InventoryNavigator}
         options={{
           title: 'Inventar',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="package-variant" size={size} color={color} />
           ),

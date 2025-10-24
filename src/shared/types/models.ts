@@ -120,7 +120,7 @@ export interface Item {
   householdId: string;
   name: string;
   description?: string;
-  categoryId: string;
+  categoryId?: string;
   locationId?: string;
   brand?: string;
   model?: string;
