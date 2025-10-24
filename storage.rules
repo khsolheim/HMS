@@ -1,0 +1,58 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isMember(householdId) {
+      return isAuthenticated() && 
+             firestore.exists(/databases/(default)/documents/households/$(householdId)) &&
+             firestore.get(/databases/(default)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
+    }
+    
+    function isValidImage() {
+      return request.resource.size < 10 * 1024 * 1024 && // 10MB
+             request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidFile() {
+      return request.resource.size < 20 * 1024 * 1024; // 20MB
+    }
+    
+    // Household files
+    match /households/{householdId}/{allPaths=**} {
+      allow read: if isMember(householdId);
+      allow write: if isMember(householdId) && isValidFile();
+    }
+    
+    // Item images
+    match /households/{householdId}/items/{itemId}/{fileName} {
+      allow read: if isMember(householdId);
+      allow write: if isMember(householdId) && isValidImage();
+      allow delete: if isMember(householdId);
+    }
+    
+    // Attachments
+    match /households/{householdId}/attachments/{itemId}/{fileName} {
+      allow read: if isMember(householdId);
+      allow write: if isMember(householdId) && isValidFile();
+      allow delete: if isMember(householdId);
+    }
+    
+    // Reports
+    match /households/{householdId}/reports/{reportId}.pdf {
+      allow read: if isMember(householdId);
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // QR codes
+    match /households/{householdId}/qrcodes/{type}/{id}.png {
+      allow read: if isMember(householdId);
+      allow write: if false; // Only Cloud Functions can write
+    }
+  }
+}
+

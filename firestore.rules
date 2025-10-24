@@ -1,5 +1,4 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -8,111 +7,109 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
     
     function isMember(householdId) {
       return isAuthenticated() && 
-             householdId in getUserData().households;
-    }
-    
-    function isHouseholdOwner(householdId) {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/households/$(householdId)).data.ownerId == request.auth.uid;
+             exists(/databases/$(database)/documents/households/$(householdId)) &&
+             get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
     }
     
     function canEdit(householdId) {
       let household = get(/databases/$(database)/documents/households/$(householdId)).data;
-      let userRole = household.members[request.auth.uid].role;
-      return isAuthenticated() && 
-             (userRole == 'owner' || userRole == 'admin' || userRole == 'editor');
+      let member = household.members[request.auth.uid];
+      return member != null && (member.role == 'owner' || member.role == 'admin' || member.role == 'editor');
     }
     
-    function canView(householdId) {
-      return isMember(householdId);
+    function canAdmin(householdId) {
+      let household = get(/databases/$(database)/documents/households/$(householdId)).data;
+      let member = household.members[request.auth.uid];
+      return member != null && (member.role == 'owner' || member.role == 'admin');
     }
     
-    // User rules
+    // Users collection
     match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if false; // Users cannot delete themselves via Firestore
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
     
-    // Household rules
+    // Households collection
     match /households/{householdId} {
-      allow read: if canView(householdId);
+      allow read: if isMember(householdId);
       allow create: if isAuthenticated();
-      allow update: if canEdit(householdId);
-      allow delete: if isHouseholdOwner(householdId);
+      allow update: if canAdmin(householdId);
+      allow delete: if canAdmin(householdId);
       
       // Items subcollection
       match /items/{itemId} {
-        allow read: if canView(householdId);
-        allow write: if canEdit(householdId);
+        allow read: if isMember(householdId);
+        allow create: if canEdit(householdId);
+        allow update: if canEdit(householdId);
+        allow delete: if canEdit(householdId);
       }
       
       // Locations subcollection
       match /locations/{locationId} {
-        allow read: if canView(householdId);
-        allow write: if canEdit(householdId);
+        allow read: if isMember(householdId);
+        allow create: if canEdit(householdId);
+        allow update: if canEdit(householdId);
+        allow delete: if canEdit(householdId);
       }
       
       // Categories subcollection
       match /categories/{categoryId} {
-        allow read: if canView(householdId);
-        allow write: if canEdit(householdId);
+        allow read: if isMember(householdId);
+        allow create: if canEdit(householdId);
+        allow update: if canEdit(householdId);
+        allow delete: if canEdit(householdId);
       }
       
       // Projects subcollection
       match /projects/{projectId} {
-        allow read: if canView(householdId);
-        allow write: if canEdit(householdId);
+        allow read: if isMember(householdId);
+        allow create: if canEdit(householdId);
+        allow update: if canEdit(householdId);
+        allow delete: if canEdit(householdId);
       }
       
       // Loans subcollection
       match /loans/{loanId} {
-        allow read: if canView(householdId);
-        allow write: if canEdit(householdId);
+        allow read: if isMember(householdId);
+        allow create: if canEdit(householdId);
+        allow update: if canEdit(householdId);
+        allow delete: if canEdit(householdId);
       }
       
       // Analytics subcollection
-      match /analytics/{document=**} {
-        allow read: if canView(householdId);
-        allow write: if false; // Only Cloud Functions can write analytics
+      match /analytics/{docId} {
+        allow read: if isMember(householdId);
+        allow write: if false; // Only Cloud Functions can write
       }
     }
     
-    // Invitation rules
+    // Invitations collection
     match /invitations/{token} {
-      allow read: if true; // Anyone with token can read
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if false; // Invitations cannot be updated
-      allow delete: if isAuthenticated() && resource.data.invitedBy == request.auth.uid;
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
     }
     
-    // Share rules
+    // Shares collection (public access)
     match /shares/{shareId} {
-      allow read: if true; // Public shares can be read by anyone
+      allow read: if true; // Public read for guest access
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+      allow update: if isAuthenticated();
+      allow delete: if resource.data.createdBy == request.auth.uid;
     }
     
     // Product database (community contributed)
     match /productDatabase/{barcode} {
-      allow read: if true; // Anyone can read product database
+      allow read: if true;
       allow create: if isAuthenticated();
-      allow update: if false; // Products cannot be updated after creation
-      allow delete: if false; // Products cannot be deleted
-    }
-    
-    // Default deny all other paths
-    match /{document=**} {
-      allow read, write: if false;
+      allow update: if isAuthenticated();
     }
   }
 }
-
