@@ -7,10 +7,11 @@ import { auth } from './config';
 WebBrowser.maybeCompleteAuthSession();
 
 /**
- * Google Sign-In for Expo (Web + Mobile)
+ * Google Sign-In for Expo (Web + Mobile) using expo-auth-session
+ * This works in Expo Go without native modules
  */
 export const useGoogleSignIn = () => {
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
@@ -23,17 +24,23 @@ export const useGoogleSignIn = () => {
       if (result?.type === 'success') {
         const { id_token } = result.params;
         
+        if (!id_token) {
+          return { user: null, error: 'Ingen ID token mottatt fra Google' };
+        }
+        
         // Sign in to Firebase with Google credential
         const credential = GoogleAuthProvider.credential(id_token);
         const userCredential = await signInWithCredential(auth, credential);
         
         return { user: userCredential.user, error: null };
+      } else if (result?.type === 'cancel') {
+        return { user: null, error: 'Google innlogging avbrutt' };
       } else {
-        return { user: null, error: 'Google sign-in cancelled' };
+        return { user: null, error: 'Google innlogging feilet' };
       }
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      return { user: null, error: error.message || 'Google sign-in failed' };
+      return { user: null, error: error.message || 'Google innlogging feilet' };
     }
   };
 
@@ -59,4 +66,3 @@ export const getGoogleUserInfo = async (accessToken: string) => {
     return { user: null, error: error.message };
   }
 };
-
