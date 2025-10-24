@@ -6,14 +6,18 @@ jest.mock('react-native-reanimated', () => {
 });
 
 // Mock MMKV
-jest.mock('react-native-mmkv', () => ({
-  MMKV: jest.fn().mockImplementation(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-    clearAll: jest.fn(),
-  })),
-}));
+jest.mock('react-native-mmkv', () => {
+  return {
+    MMKV: jest.fn().mockImplementation(() => ({
+      getString: jest.fn(),
+      getBoolean: jest.fn(),
+      getNumber: jest.fn(),
+      set: jest.fn(),
+      delete: jest.fn(),
+      clearAll: jest.fn(),
+    })),
+  };
+});
 
 // Mock Firebase
 jest.mock('firebase/app', () => ({

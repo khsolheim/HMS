@@ -7,6 +7,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import '@/services/firebase/config'; // Initialize Firebase
 import { useAuthInit, useAuth } from '@/features/auth/hooks/useAuth';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
+import { OnboardingNavigator } from '@/navigation/OnboardingNavigator';
+import { storageHelpers } from '@/shared/utils/storage';
+import { useState, useEffect } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,8 +23,15 @@ const queryClient = new QueryClient({
 function AppContent() {
   useAuthInit(); // Initialize auth listener
   const { isAuthenticated, isInitializing } = useAuth();
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
 
-  if (isInitializing) {
+  useEffect(() => {
+    // Check if onboarding is completed
+    const completed = storageHelpers.getOnboardingCompleted();
+    setOnboardingCompleted(completed);
+  }, []);
+
+  if (isInitializing || onboardingCompleted === null) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1976d2" />
@@ -30,15 +40,28 @@ function AppContent() {
     );
   }
 
+  // Show auth screens if not authenticated
   if (!isAuthenticated) {
     return <AuthNavigator />;
+  }
+
+  // Show onboarding if not completed
+  if (!onboardingCompleted) {
+    return (
+      <OnboardingNavigator
+        onComplete={() => {
+          setOnboardingCompleted(true);
+          storageHelpers.setOnboardingCompleted(true);
+        }}
+      />
+    );
   }
 
   // TODO: Replace with MainNavigator after P0-5
   return (
     <View style={styles.container}>
       <Text style={styles.title}>HMS Inventory</Text>
-      <Text style={styles.subtitle}>✅ Autentisert!</Text>
+      <Text style={styles.subtitle}>✅ Autentisert og Onboarding fullført!</Text>
       <Text style={styles.info}>MainNavigator kommer i P0-5</Text>
       <StatusBar style="auto" />
     </View>
