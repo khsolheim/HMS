@@ -1,0 +1,118 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isMember(householdId) {
+      return isAuthenticated() && 
+             householdId in getUserData().households;
+    }
+    
+    function isHouseholdOwner(householdId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/households/$(householdId)).data.ownerId == request.auth.uid;
+    }
+    
+    function canEdit(householdId) {
+      let household = get(/databases/$(database)/documents/households/$(householdId)).data;
+      let userRole = household.members[request.auth.uid].role;
+      return isAuthenticated() && 
+             (userRole == 'owner' || userRole == 'admin' || userRole == 'editor');
+    }
+    
+    function canView(householdId) {
+      return isMember(householdId);
+    }
+    
+    // User rules
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false; // Users cannot delete themselves via Firestore
+    }
+    
+    // Household rules
+    match /households/{householdId} {
+      allow read: if canView(householdId);
+      allow create: if isAuthenticated();
+      allow update: if canEdit(householdId);
+      allow delete: if isHouseholdOwner(householdId);
+      
+      // Items subcollection
+      match /items/{itemId} {
+        allow read: if canView(householdId);
+        allow write: if canEdit(householdId);
+      }
+      
+      // Locations subcollection
+      match /locations/{locationId} {
+        allow read: if canView(householdId);
+        allow write: if canEdit(householdId);
+      }
+      
+      // Categories subcollection
+      match /categories/{categoryId} {
+        allow read: if canView(householdId);
+        allow write: if canEdit(householdId);
+      }
+      
+      // Projects subcollection
+      match /projects/{projectId} {
+        allow read: if canView(householdId);
+        allow write: if canEdit(householdId);
+      }
+      
+      // Loans subcollection
+      match /loans/{loanId} {
+        allow read: if canView(householdId);
+        allow write: if canEdit(householdId);
+      }
+      
+      // Analytics subcollection
+      match /analytics/{document=**} {
+        allow read: if canView(householdId);
+        allow write: if false; // Only Cloud Functions can write analytics
+      }
+    }
+    
+    // Invitation rules
+    match /invitations/{token} {
+      allow read: if true; // Anyone with token can read
+      allow create: if isAuthenticated();
+      allow update: if false; // Invitations cannot be updated
+      allow delete: if isAuthenticated() && resource.data.invitedBy == request.auth.uid;
+    }
+    
+    // Share rules
+    match /shares/{shareId} {
+      allow read: if true; // Public shares can be read by anyone
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+    }
+    
+    // Product database (community contributed)
+    match /productDatabase/{barcode} {
+      allow read: if true; // Anyone can read product database
+      allow create: if isAuthenticated();
+      allow update: if false; // Products cannot be updated after creation
+      allow delete: if false; // Products cannot be deleted
+    }
+    
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

@@ -1,41 +1,102 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# OSX
+.DS_Store
 
-# dependencies
+# Xcode
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+ios/Pods/
+
+# Android/IJ
+.idea
+.gradle
+local.properties
+*.iml
+*.hprof
+android/.idea
+android/.gradle
+android/app/build
+android/build
+
+# Node
 node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Jest
+coverage/
+
+# Bundle artifacts
+*.jsbundle
+
+# CocoaPods
+ios/Pods/
 
 # Expo
 .expo/
 dist/
 web-build/
-expo-env.d.ts
+.expo-shared
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Testing
+coverage/
+__tests__/__snapshots__/
 
-# Metro
-.metro-health-check*
+# Debug
+*.log
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# VSCode
+.vscode/
+
+# Temporary files
+*.swp
+*.swo
+*~
 
 # macOS
-.DS_Store
-*.pem
+.AppleDouble
+.LSOverride
 
-# local env files
-.env*.local
+# Thumbnails
+._*
 
-# typescript
-*.tsbuildinfo
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
 
-# generated native folders
-/ios
-/android
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
