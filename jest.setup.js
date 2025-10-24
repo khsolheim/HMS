@@ -1,5 +1,3 @@
-import '@testing-library/react-native/extend-expect';
-
 // Mock Reanimated
 jest.mock('react-native-reanimated', () => {
   const Reanimated = require('react-native-reanimated/mock');
@@ -21,6 +19,7 @@ jest.mock('react-native-mmkv', () => ({
 jest.mock('firebase/app', () => ({
   initializeApp: jest.fn(),
   getApp: jest.fn(),
+  getApps: jest.fn(() => []),
 }));
 
 jest.mock('firebase/auth', () => ({
@@ -28,6 +27,10 @@ jest.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: jest.fn(),
   createUserWithEmailAndPassword: jest.fn(),
   signOut: jest.fn(),
+  onAuthStateChanged: jest.fn((auth, callback) => {
+    // Mock unsubscribe function
+    return jest.fn();
+  }),
 }));
 
 jest.mock('firebase/firestore', () => ({
@@ -39,8 +42,19 @@ jest.mock('firebase/firestore', () => ({
   addDoc: jest.fn(),
   updateDoc: jest.fn(),
   deleteDoc: jest.fn(),
+  setDoc: jest.fn(),
+  serverTimestamp: jest.fn(() => ({ seconds: Date.now() / 1000 })),
+  enableIndexedDbPersistence: jest.fn(() => Promise.resolve()),
 }));
 
-// Silence the warning: Animated: `useNativeDriver` is not supported
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+// Mock Firebase Storage
+jest.mock('firebase/storage', () => ({
+  getStorage: jest.fn(),
+}));
+
+// Mock Firebase Functions
+jest.mock('firebase/functions', () => ({
+  getFunctions: jest.fn(),
+}));
+
 
